@@ -221,6 +221,120 @@ function M.focus()
   end
 end
 
+-- Internal: ensure the terminal job is available for sending
+local function ensure_job_ready()
+  if not state.jobid or state.jobid <= 0 then
+    vim.notify("truffle.nvim: terminal job is not running. Open the panel first.", vim.log.levels.ERROR)
+    return false
+  end
+  return true
+end
+
+-- Internal: send string to terminal with a trailing newline if missing
+local function send_to_terminal(text)
+  if not ensure_job_ready() then return end
+  if type(text) ~= "string" then
+    vim.notify("truffle.nvim: send_text expects a string.", vim.log.levels.ERROR)
+    return
+  end
+  local needs_newline = not (text:sub(-1) == "\n" or text:sub(-1) == "\r")
+  local payload = needs_newline and (text .. "\r") or text
+  pcall(vim.fn.chansend, state.jobid, payload)
+end
+
+-- Public: send plain text to the running job
+function M.send_text(text)
+  if text == nil then
+    vim.notify("truffle.nvim: send_text requires a string.", vim.log.levels.ERROR)
+    return
+  end
+  send_to_terminal(tostring(text))
+end
+
+-- Internal: capture current visual selection as text
+local function get_visual_selection_text()
+  local start_pos = vim.fn.getpos("'<")
+  local end_pos = vim.fn.getpos("'>")
+
+  local start_line, start_col = start_pos[2], start_pos[3]
+  local end_line, end_col = end_pos[2], end_pos[3]
+
+  -- Normalize order
+  if end_line < start_line or (end_line == start_line and end_col < start_col) then
+    start_line, end_line = end_line, start_line
+    start_col, end_col = end_col, start_col
+  end
+
+  local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
+  if #lines == 0 then return "" end
+
+  if #lines == 1 then
+    local line = lines[1]
+    return string.sub(line, start_col, end_col)
+  end
+
+  local first = string.sub(lines[1], start_col)
+  local last = string.sub(lines[#lines], 1, end_col)
+  local middle = {}
+  if #lines > 2 then
+    for i = 2, #lines - 1 do
+      table.insert(middle, lines[i])
+    end
+  end
+
+  local result = { first }
+  for _, m in ipairs(middle) do table.insert(result, m) end
+  table.insert(result, last)
+  return table.concat(result, "\n")
+end
+
+-- Public: send the current visual selection to the running job
+function M.send_visual()
+  local text = get_visual_selection_text()
+  if not text or text == "" then
+    vim.notify("truffle.nvim: visual selection is empty.", vim.log.levels.WARN)
+    return
+  end
+  send_to_terminal(text)
+end
+
+-- Public: send a file's contents to the running job
+function M.send_file(opts)
+  opts = opts or {}
+  local path = opts.path
+  if not path or path == "current" then
+    path = vim.api.nvim_buf_get_name(0)
+  end
+
+  if not path or path == "" then
+    vim.notify("truffle.nvim: current buffer has no file path to send.", vim.log.levels.ERROR)
+    return
+  end
+
+  local stat = vim.loop.fs_stat(path)
+  if not stat or stat.type ~= "file" then
+    vim.notify("truffle.nvim: cannot read file: " .. path, vim.log.levels.ERROR)
+    return
+  end
+
+  local MAX_FILE_BYTES = 1024 * 1024 -- 1MB guard
+  if stat.size and stat.size > MAX_FILE_BYTES then
+    vim.notify("truffle.nvim: file too large to send (limit 1MB): " .. path, vim.log.levels.ERROR)
+    return
+  end
+
+  local ok, lines = pcall(vim.fn.readfile, path)
+  if not ok or type(lines) ~= "table" then
+    vim.notify("truffle.nvim: failed to read file: " .. path, vim.log.levels.ERROR)
+    return
+  end
+  local text = table.concat(lines, "\n")
+  if text == "" then
+    vim.notify("truffle.nvim: file is empty: " .. path, vim.log.levels.WARN)
+  end
+  send_to_terminal(text)
+end
+
 local function create_user_commands()
   if state._commands_created then return end
 
