@@ -3,42 +3,69 @@ local Selection = require("truffle.selection")
 
 local Terminal = {}
 
+local termclose_group = vim.api.nvim_create_augroup("TruffleTermClose", { clear = false })
+
+local function setup_termclose_autocmd(state, buf)
+	pcall(vim.api.nvim_clear_autocmds, { group = termclose_group, buffer = buf })
+	vim.api.nvim_create_autocmd("TermClose", {
+		group = termclose_group,
+		buffer = buf,
+		callback = function()
+			state.jobid = nil
+			pcall(vim.notify, "truffle.nvim: terminal process exited", vim.log.levels.INFO)
+		end,
+	})
+end
+
+local function start_job_in_current_buf(state)
+	local ok, job = pcall(vim.fn.jobstart, { state.config.command }, { term = true })
+	if not ok or not job or job <= 0 then
+		vim.notify("Failed to start '" .. state.config.command .. "'. Is it in your PATH?", vim.log.levels.ERROR)
+		return nil
+	end
+	state.jobid = job
+	setup_termclose_autocmd(state, vim.api.nvim_get_current_buf())
+	if state.config.start_insert then
+		vim.cmd("startinsert")
+	end
+	return job
+end
+
 local function open_new_terminal(state, win)
 	local buf = vim.api.nvim_create_buf(false, true)
 	vim.api.nvim_win_set_buf(win, buf)
+	pcall(vim.api.nvim_set_current_win, win)
 
 	vim.bo[buf].buflisted = false
 	vim.bo[buf].bufhidden = "hide"
 	vim.bo[buf].swapfile = false
 	vim.bo[buf].filetype = "truffle"
 
-	local ok, job = pcall(vim.fn.jobstart, { state.config.command }, {
-		term = true,
-	})
-
-	if not ok or not job or job <= 0 then
-		vim.notify("Failed to start '" .. state.config.command .. "'. Is it in your PATH?", vim.log.levels.ERROR)
-		return nil, nil
-	end
-
-	if state.config.start_insert then
-		vim.cmd("startinsert")
-	end
-
 	state.bufnr = buf
 	state.winid = win
-	state.jobid = job
+
+	local job = start_job_in_current_buf(state)
+	if not job then
+		return nil, nil
+	end
 	return buf, win
 end
 
 local function reopen_existing_buffer(state, win)
 	vim.api.nvim_win_set_buf(win, state.bufnr)
+	pcall(vim.api.nvim_set_current_win, win)
 	if Utils.is_valid_buf(state.bufnr) then
 		vim.bo[state.bufnr].buflisted = false
 	end
-	if state.config.start_insert then
-		vim.cmd("startinsert")
+
+	if not Utils.is_job_running(state.jobid) then
+		start_job_in_current_buf(state)
+	else
+		if state.config.start_insert then
+			vim.cmd("startinsert")
+		end
 	end
+
 	state.winid = win
 	return state.bufnr, win
 end
@@ -54,7 +81,7 @@ local function ensure_panel_visible_and_focus_insert(state)
 end
 
 local function ensure_job_ready(state)
-	if not state.jobid or state.jobid <= 0 then
+	if not Utils.is_job_running(state.jobid) then
 		vim.notify("truffle.nvim: terminal job is not running. Open the panel first.", vim.log.levels.ERROR)
 		return false
 	end
@@ -70,8 +97,12 @@ local function send_to_terminal(state, data)
 end
 
 function Terminal.open(state)
+	-- If window is visible, ensure job alive; if not, relaunch in-place
 	if Utils.is_valid_win(state.winid) then
 		pcall(vim.api.nvim_set_current_win, state.winid)
+		if Utils.is_valid_buf(state.bufnr) and not Utils.is_job_running(state.jobid) then
+			start_job_in_current_buf(state)
+		end
 		return
 	end
 

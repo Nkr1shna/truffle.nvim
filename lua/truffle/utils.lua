@@ -46,4 +46,14 @@ function Utils.create_split_and_focus_right()
 	return vim.api.nvim_get_current_win()
 end
 
+-- Detect if a job is still running. jobwait returns -1 for running jobs.
+function Utils.is_job_running(jobid)
+	if not jobid or jobid <= 0 then
+		return false
+	end
+	local res = vim.fn.jobwait({ jobid }, 0)
+	local code = res and res[1] or nil
+	return code == -1
+end
+
 return Utils
