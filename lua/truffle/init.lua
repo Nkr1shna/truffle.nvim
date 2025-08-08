@@ -43,7 +43,7 @@ local function guess_docs_url_for_command(cmd)
   if c:find("crush") then
     return "https://github.com/charmbracelet/crush"
   end
-  if c:find("gemini") or c:find("gemini") then
+  if c:find("gemini") then
     return "https://github.com/google-gemini/gemini-cli"
   end
   if c:find("claude") or c:find("anthropic") then

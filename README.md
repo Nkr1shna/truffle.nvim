@@ -11,7 +11,7 @@ A tiny, cheerful side-panel for Neovim that docks a terminal on the right and ru
 ### Requirements 🧰
 
 - Neovim 0.7+ (0.9+ recommended)
-- A CLI on your `PATH` to run in the panel (the plugin doesn’t install CLIs for you)
+- A CLI on your `PATH` to run in the panel (the plugin doesn’t install CLIs for you) — see [Get an agent CLI](#get-an-agent-cli)
 
 ### Installation 🚀
 
@@ -26,7 +26,7 @@ A tiny, cheerful side-panel for Neovim that docks a terminal on the right and ru
       -- optional overrides
       -- width = 65,                     -- right split width
       -- start_insert = true,            -- enter insert/terminal mode on open
-      -- create_mappings = true,         -- set default keymaps
+      -- create_mappings = true,         -- set default keymaps, set it to false if you want to use user commands instead
       -- toggle_mapping = "<leader>tc",  -- default toggle keybinding
     })
   end,
@@ -111,32 +111,10 @@ end, { desc = 'Truffle: Toggle panel' })
 
 ### Notes 📝
 
-- If the configured `command` is not found on `PATH`, the plugin shows a helpful error (with a docs link for known CLIs) and does not attempt to install anything.
+- If the configured `command` is not found on `PATH`, the plugin throw an error.
 - The same buffer is reused across toggles to retain session context.
 
-### Using different CLIs 🧠
-
-You can point the plugin to any CLI (set `command` accordingly):
-
-```lua
-require('truffle').setup({
-  -- Cursor Agent (example)
-  command = "cursor-agent",
-  -- Crush
-  -- command = "crush",
-  -- Gemini (via npx)
-  -- command = "npx -y @google/generative-ai-cli@latest chat",
-  -- Claude (example, adjust per docs)
-  -- command = "claude",
-})
-```
-
-### Pro tips 💡
-- Want the panel hidden from buffer tabs? It already is (`buflisted=false`).
-- Want statusline/tabline to ignore it too? Filter by `buftype='terminal'` or `filetype='truffle'` in your statusline config.
-- Resize on the fly with `:vert resize +5` or set `width` in setup.
-
-Helpful docs:
+#### Get an agent CLI
 - Cursor Agent: https://docs.cursor.com/en/cli/installation
 - Crush: https://github.com/charmbracelet/crush
 - Gemini CLI: https://github.com/google-gemini/gemini-cli
