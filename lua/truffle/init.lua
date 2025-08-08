@@ -5,6 +5,8 @@ local state = {
   winid = nil,
   jobid = nil,
   config = nil,
+  _commands_created = false,
+  _mapping_set = nil,
 }
 
 local DEFAULT_CONFIG = {
@@ -13,6 +15,60 @@ local DEFAULT_CONFIG = {
   create_mappings = true,
   toggle_mapping = "<leader>tc",
 }
+
+-- Validate user-provided options; returns boolean
+local function validate_opts(opts)
+  opts = opts or {}
+
+  local ok, err = pcall(vim.validate, {
+    command = { opts.command, "string", true },
+    width = { opts.width, "number", true },
+    start_insert = { opts.start_insert, "boolean", true },
+    create_mappings = { opts.create_mappings, "boolean", true },
+    toggle_mapping = { opts.toggle_mapping, "string", true },
+    size = {
+      opts.size,
+      function(v)
+        if v == nil then return true end
+        local t = type(v)
+        if t == "number" then return v > 0 end
+        if t == "string" then return v:match("^%d+%%$") ~= nil end
+        return false
+      end,
+      "number > 0 or percentage string like '33%'",
+    },
+    side = {
+      opts.side,
+      function(v)
+        if v == nil then return true end
+        return v == "right" or v == "bottom" or v == "left"
+      end,
+      "one of 'right', 'bottom', 'left'",
+    },
+  })
+
+  if not ok then
+    vim.notify("truffle.nvim: invalid setup options: " .. tostring(err), vim.log.levels.ERROR)
+    return false
+  end
+
+  if type(opts.width) == "number" and opts.width <= 0 then
+    vim.notify("truffle.nvim: 'width' must be > 0", vim.log.levels.ERROR)
+    return false
+  end
+
+  if type(opts.toggle_mapping) == "string" and opts.toggle_mapping == "" then
+    vim.notify("truffle.nvim: 'toggle_mapping' cannot be empty", vim.log.levels.ERROR)
+    return false
+  end
+
+  if type(opts.command) == "string" and opts.command == "" then
+    vim.notify("truffle.nvim: setup requires a non-empty 'command' option.", vim.log.levels.ERROR)
+    return false
+  end
+
+  return true
+end
 
 local function is_valid_win(win)
   return win and vim.api.nvim_win_is_valid(win)
@@ -166,6 +222,8 @@ function M.focus()
 end
 
 local function create_user_commands()
+  if state._commands_created then return end
+
   pcall(vim.api.nvim_create_user_command, "TruffleToggle", function()
     M.toggle()
   end, { desc = "Toggle the Truffle terminal" })
@@ -181,20 +239,39 @@ local function create_user_commands()
   pcall(vim.api.nvim_create_user_command, "TruffleFocus", function()
     M.focus()
   end, { desc = "Focus the Truffle terminal" })
+
+  state._commands_created = true
 end
 
 local function create_default_keymaps()
-  if not state.config.create_mappings then return end
+  local previous_mapping = state._mapping_set
+
+  if not state.config.create_mappings then
+    if previous_mapping then
+      pcall(vim.keymap.del, "n", previous_mapping)
+    end
+    state._mapping_set = nil
+    return
+  end
+
   local mapping = state.config.toggle_mapping or DEFAULT_CONFIG.toggle_mapping
-  pcall(vim.keymap.set, "n", mapping, function()
-    M.toggle()
-  end, { desc = "Truffle: Toggle panel" })
+
+  if previous_mapping and previous_mapping ~= mapping then
+    pcall(vim.keymap.del, "n", previous_mapping)
+  end
+
+  if state._mapping_set ~= mapping then
+    pcall(vim.keymap.set, "n", mapping, function()
+      M.toggle()
+    end, { desc = "Truffle: Toggle panel" })
+    state._mapping_set = mapping
+  end
 end
 
 function M.setup(opts)
   opts = opts or {}
 
-  -- Enforce mandatory command option
+  -- Enforce mandatory command option early with clear message
   if not opts.command or opts.command == "" then
     state.config = vim.deepcopy(DEFAULT_CONFIG)
     vim.notify(
@@ -204,7 +281,15 @@ function M.setup(opts)
     return
   end
 
+  -- Validate optional fields and types; on failure, do not mutate state or create side effects
+  if not validate_opts(opts) then
+    return
+  end
+
+  -- Merge and apply config
   state.config = vim.tbl_deep_extend("force", vim.deepcopy(DEFAULT_CONFIG), opts)
+
+  -- Create commands only once; mappings updated idempotently
   create_user_commands()
   create_default_keymaps()
 end
