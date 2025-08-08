@@ -19,7 +19,7 @@ A tiny, cheerful side-panel for Neovim that docks a terminal on the right by def
 
 ```lua
 {
-  "your-username/truffle.nvim",
+  "Nkr1shna/truffle.nvim",
   config = function()
     require("truffle").setup({
       command = "cursor-agent",         -- REQUIRED: set your CLI command, make sure it is available in path
@@ -43,7 +43,7 @@ A tiny, cheerful side-panel for Neovim that docks a terminal on the right by def
 
 ```lua
 use({
-  "your-username/truffle.nvim",
+  "Nkr1shna/truffle.nvim",
   config = function()
     require("truffle").setup({ command = "cursor-agent" })
   end,
@@ -53,7 +53,7 @@ use({
 #### dein.vim (command is required)
 
 ```vim
-call dein#add('your-username/truffle.nvim')
+call dein#add('Nkr1shna/truffle.nvim')
 " Then in your init.lua or after/plugin file
 lua << EOF
 require('truffle').setup({ command = 'cursor-agent' })
@@ -63,7 +63,7 @@ EOF
 #### vim-plug (command is required)
 
 ```vim
-Plug 'your-username/truffle.nvim'
+Plug 'Nkr1shna/truffle.nvim'
 " Then in your init.lua or after/plugin file
 lua << EOF
 require('truffle').setup({ command = 'cursor-agent' })
