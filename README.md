@@ -132,7 +132,6 @@ require('truffle').setup({
 ```
 
 Helpful docs:
-- Truffle: https://trufflesuite.com/docs
 - Cursor Agent: https://docs.cursor.com/en/cli/installation
 - Crush: https://github.com/charmbracelet/crush
 - Gemini CLI: https://github.com/google-gemini/gemini-cli
