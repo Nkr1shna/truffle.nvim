@@ -11,8 +11,7 @@ A tiny, cheerful side-panel for Neovim that docks a terminal on the right by def
 ### Demo 🎥
 
 Watch a short demo:
-
-- [assets/truffle_in_action.mp4](assets/truffle_in_action.mp4)
+<video src="assets/truffle_in_action.mp4" controls></video>
 
 You can open it directly on GitHub to stream in the browser.
 
