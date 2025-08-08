@@ -1,17 +1,19 @@
-### truffle.nvim
+### truffle.nvim ✨
 
-A lightweight Neovim plugin that opens a right-side terminal running a CLI of your choice (configured via a mandatory `command` option), giving you a chat-like side panel inside Neovim.
+A tiny, cheerful side-panel for Neovim that docks a terminal on the right and runs the AI/CLI of your choice. Bring your own agent, we bring the vibes.
 
-- **Default toggle**: `<leader>tc`
+- **You choose the brain**: set a mandatory `command` (e.g., `cursor-agent`, `crush`, `claude`, `npx gemini`)
+- **Right-side dock**: neat vertical split on the right
+- **One key to rule them all**: default toggle is `<leader>tc`
 - **Layout**: vertical split docked to the right
 - **Command**: runs `truffle` in a terminal buffer (configurable)
 
-### Requirements
+### Requirements 🧰
 
 - Neovim 0.7+ (0.9+ recommended)
-- The CLI you want to run must be available on your `PATH` (this plugin does not install CLIs for you).
+- A CLI on your `PATH` to run in the panel (the plugin doesn’t install CLIs for you)
 
-### Installation
+### Installation 🚀
 
 #### lazy.nvim (command is required)
 
@@ -20,7 +22,8 @@ A lightweight Neovim plugin that opens a right-side terminal running a CLI of yo
   "your-username/truffle.nvim",
   config = function()
     require("truffle").setup({
-      command = "cursor-agent",         -- REQUIRED: set your CLI command
+      command = "cursor-agent",         -- REQUIRED: set your CLI command, make sure it is available in path
+      -- optional overrides
       -- width = 65,                     -- right split width
       -- start_insert = true,            -- enter insert/terminal mode on open
       -- create_mappings = true,         -- set default keymaps
@@ -61,7 +64,7 @@ require('truffle').setup({ command = 'cursor-agent' })
 EOF
 ```
 
-### Usage
+### Usage 🎛️
 
 - **Toggle panel**: press `<leader>tc` (default) or run:
   - `:TruffleToggle`
@@ -71,7 +74,7 @@ EOF
 
 The panel reuses the same terminal buffer across toggles. When opened, the window is moved to the right (`:wincmd L`) and resized to the configured width.
 
-### Configuration
+### Configuration ⚙️
 
 Call `require('truffle').setup({...})` with options (command is required):
 
@@ -85,7 +88,7 @@ require('truffle').setup({
 })
 ```
 
-You can disable the default mapping and add your own:
+Prefer your own keymaps? Disable the default and add your favorite:
 
 ```lua
 require('truffle').setup({
@@ -98,7 +101,7 @@ vim.keymap.set('n', '<leader>tc', function()
 end, { desc = 'Truffle: Toggle panel' })
 ```
 
-### Commands
+### Commands 🧪
 
 - `:TruffleToggle` – Toggle the right-side terminal
 - `:TruffleOpen` – Open/create and focus the right-side terminal
@@ -106,12 +109,12 @@ end, { desc = 'Truffle: Toggle panel' })
 - `:TruffleFocus` – Focus the terminal window (opens if missing)
   
 
-### Notes
+### Notes 📝
 
 - If the configured `command` is not found on `PATH`, the plugin shows a helpful error (with a docs link for known CLIs) and does not attempt to install anything.
 - The same buffer is reused across toggles to retain session context.
 
-### Using different CLIs
+### Using different CLIs 🧠
 
 You can point the plugin to any CLI (set `command` accordingly):
 
@@ -127,6 +130,11 @@ require('truffle').setup({
   -- command = "claude",
 })
 ```
+
+### Pro tips 💡
+- Want the panel hidden from buffer tabs? It already is (`buflisted=false`).
+- Want statusline/tabline to ignore it too? Filter by `buftype='terminal'` or `filetype='truffle'` in your statusline config.
+- Resize on the fly with `:vert resize +5` or set `width` in setup.
 
 Helpful docs:
 - Cursor Agent: https://docs.cursor.com/en/cli/installation
