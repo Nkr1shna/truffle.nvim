@@ -5,8 +5,6 @@ A tiny, cheerful side-panel for Neovim that docks a terminal on the right by def
 - **You choose the brain**: set a mandatory `command` (e.g., `cursor-agent`, `crush`, `claude`, `npx gemini`)
 - **Right-side dock (default)**: neat vertical split on the right; configurable `side = 'right' | 'bottom' | 'left'`
 - **Keymaps**: defaults under `<leader>t...` (toggle, send selection/file/input)
-- **Layout**: vertical split docked to the right
-- **Command**: runs `truffle` in a terminal buffer (configurable)
 
 ### Demo 🎥
 
@@ -27,17 +25,6 @@ A tiny, cheerful side-panel for Neovim that docks a terminal on the right by def
   config = function()
     require("truffle").setup({
       command = "cursor-agent",         -- REQUIRED: set your CLI command, make sure it is available in path
-      -- optional overrides
-      -- width = 65,                     -- right split width
-      -- start_insert = true,            -- enter insert/terminal mode on open
-      -- create_mappings = true,         -- install default keymaps
-      -- mappings = {                    -- override any of the defaults below
-      --   toggle = "<leader>tc",
-      --   send_selection = "<leader>ts",
-      --   send_file = "<leader>tf",
-      --   send_input = "<leader>ti",
-      -- },
-      -- toggle_mapping = "<leader>tc",  -- deprecated: still supported for toggle (back-compat)
     })
   end,
 }
