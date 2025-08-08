@@ -41,8 +41,22 @@ function Utils.guess_docs_url_for_command(cmd)
 end
 
 function Utils.create_split_and_focus_right()
-	vim.cmd("vsplit")
-	vim.cmd("wincmd L")
+	-- Backward-compat shim; prefer create_split_on_side("right")
+	return Utils.create_split_on_side("right")
+end
+
+function Utils.create_split_on_side(side)
+	local which = side or "right"
+	if which == "bottom" then
+		vim.cmd("split")
+		vim.cmd("wincmd J")
+	elseif which == "left" then
+		vim.cmd("vsplit")
+		vim.cmd("wincmd H")
+	else -- "right"
+		vim.cmd("vsplit")
+		vim.cmd("wincmd L")
+	end
 	return vim.api.nvim_get_current_win()
 end
 
@@ -54,6 +68,38 @@ function Utils.is_job_running(jobid)
 	local res = vim.fn.jobwait({ jobid }, 0)
 	local code = res and res[1] or nil
 	return code == -1
+end
+
+function Utils.set_window_height(win, height)
+	if not Utils.is_valid_win(win) then
+		return
+	end
+	pcall(vim.api.nvim_win_set_height, win, height)
+end
+
+function Utils.apply_window_look(win, side)
+	if not Utils.is_valid_win(win) then
+		return
+	end
+	local ok = pcall(function()
+		local wo = vim.wo[win]
+		if not wo then
+			return
+		end
+		wo.number = false
+		wo.relativenumber = false
+		wo.signcolumn = "no"
+		wo.foldcolumn = "0"
+		wo.list = false
+		if side == "bottom" then
+			wo.winfixheight = true
+		else
+			wo.winfixwidth = true
+		end
+	end)
+	if not ok then
+		-- ignore across versions
+	end
 end
 
 return Utils

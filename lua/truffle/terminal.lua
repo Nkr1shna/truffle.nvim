@@ -36,10 +36,13 @@ local function open_new_terminal(state, win)
 	vim.api.nvim_win_set_buf(win, buf)
 	pcall(vim.api.nvim_set_current_win, win)
 
-	vim.bo[buf].buflisted = false
+	vim.bo[buf].buflisted = state.config.buflisted == true
 	vim.bo[buf].bufhidden = "hide"
 	vim.bo[buf].swapfile = false
 	vim.bo[buf].filetype = "truffle"
+	if type(state.config.buffer_name) == "string" and state.config.buffer_name ~= "" then
+		pcall(vim.api.nvim_buf_set_name, buf, state.config.buffer_name)
+	end
 
 	state.bufnr = buf
 	state.winid = win
@@ -55,7 +58,7 @@ local function reopen_existing_buffer(state, win)
 	vim.api.nvim_win_set_buf(win, state.bufnr)
 	pcall(vim.api.nvim_set_current_win, win)
 	if Utils.is_valid_buf(state.bufnr) then
-		vim.bo[state.bufnr].buflisted = false
+		vim.bo[state.bufnr].buflisted = state.config.buflisted == true
 	end
 
 	if not Utils.is_job_running(state.jobid) then
@@ -124,8 +127,41 @@ function Terminal.open(state)
 		return
 	end
 
-	local win = Utils.create_split_and_focus_right()
-	Utils.set_window_width(win, state.config.width)
+	local side = (state.config and state.config.side) or "right"
+	local win = Utils.create_split_on_side(side)
+
+	-- Compute desired size (absolute or percentage)
+	local size_value = nil
+	local cfg_size = state.config and state.config.size or nil
+	if type(cfg_size) == "string" then
+		local pct = tonumber(cfg_size:match("^(%d+)%%$"))
+		if pct and pct > 0 then
+			if side == "bottom" then
+				size_value = math.floor((vim.o.lines or 24) * (pct / 100))
+			else
+				size_value = math.floor((vim.o.columns or 80) * (pct / 100))
+			end
+		end
+	elseif type(cfg_size) == "number" and cfg_size > 0 then
+		size_value = cfg_size
+	end
+
+	if not size_value then
+		if side == "bottom" then
+			-- Sensible default height when docked at bottom
+			size_value = 12
+		else
+			-- Default width for left/right docks when size is not provided
+			size_value = 65
+		end
+	end
+
+	if side == "bottom" then
+		Utils.set_window_height(win, size_value)
+	else
+		Utils.set_window_width(win, size_value)
+	end
+	Utils.apply_window_look(win, side)
 
 	if Utils.is_valid_buf(state.bufnr) then
 		reopen_existing_buffer(state, win)

@@ -1,5 +1,13 @@
 local DEFAULT_CONFIG = {
-	width = 65,
+	-- Layout & sizing
+	side = "right", -- one of: right | bottom | left
+	size = nil, -- number of cols/rows or percentage string like "33%"
+
+	-- Window/buffer polish
+	buffer_name = "[Truffle]",
+	buflisted = false,
+
+	-- Behavior
 	start_insert = true,
 	create_mappings = true,
 	mappings = {
@@ -15,10 +23,11 @@ local function validate_opts(opts)
 
 	local ok, err = pcall(vim.validate, {
 		command = { opts.command, "string", true },
-		width = { opts.width, "number", true },
 		start_insert = { opts.start_insert, "boolean", true },
 		create_mappings = { opts.create_mappings, "boolean", true },
 		toggle_mapping = { opts.toggle_mapping, "string", true },
+		buffer_name = { opts.buffer_name, "string", true },
+		buflisted = { opts.buflisted, "boolean", true },
 		mappings = {
 			opts.mappings,
 			function(m)
@@ -74,11 +83,6 @@ local function validate_opts(opts)
 
 	if not ok then
 		vim.notify("truffle.nvim: invalid setup options: " .. tostring(err), vim.log.levels.ERROR)
-		return false
-	end
-
-	if type(opts.width) == "number" and opts.width <= 0 then
-		vim.notify("truffle.nvim: 'width' must be > 0", vim.log.levels.ERROR)
 		return false
 	end
 
