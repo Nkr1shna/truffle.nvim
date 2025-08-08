@@ -34,7 +34,7 @@ function Keymaps.create_default_keymaps(state, api, default_mappings)
 		api.toggle()
 	end, "Truffle: Toggle panel")
 
-	apply_mapping(state, "send_selection", "v", mappings.send_selection, function()
+	apply_mapping(state, "send_selection", "x", mappings.send_selection, function()
 		api.send_visual()
 	end, "Truffle: Send selection")
 

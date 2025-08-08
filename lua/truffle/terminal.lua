@@ -202,8 +202,9 @@ function Terminal.send_text(state, text)
 end
 
 function Terminal.send_visual(state)
-	ensure_panel_visible_and_focus_insert(state)
 	local text = Selection.get_visual_selection_text()
+	text = text .. "\n"
+	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
 	if not text or text == "" then
 		vim.notify("truffle.nvim: visual selection is empty.", vim.log.levels.WARN)
 		return

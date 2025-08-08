@@ -8,6 +8,14 @@ A tiny, cheerful side-panel for Neovim that docks a terminal on the right by def
 - **Layout**: vertical split docked to the right
 - **Command**: runs `truffle` in a terminal buffer (configurable)
 
+### Demo 🎥
+
+Watch a short demo:
+
+- [assets/truffle_in_action.mp4](assets/truffle_in_action.mp4)
+
+You can open it directly on GitHub to stream in the browser.
+
 ### Requirements 🧰
 
 - Neovim 0.7+ (0.9+ recommended)
