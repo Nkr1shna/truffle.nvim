@@ -1,6 +1,6 @@
 ### truffle.nvim
 
-A lightweight Neovim plugin that opens a right-side terminal running `truffle` (configurable), giving you a chat-like side panel inside Neovim.
+A lightweight Neovim plugin that opens a right-side terminal running a CLI of your choice (configured via a mandatory `command` option), giving you a chat-like side panel inside Neovim.
 
 - **Default toggle**: `<leader>tc`
 - **Layout**: vertical split docked to the right
@@ -13,53 +13,51 @@ A lightweight Neovim plugin that opens a right-side terminal running `truffle` (
 
 ### Installation
 
-#### lazy.nvim
+#### lazy.nvim (command is required)
 
 ```lua
 {
   "your-username/truffle.nvim",
   config = function()
     require("truffle").setup({
-      -- optional overrides
-      -- command = "truffle --flag",   -- default: "truffle"
-      -- width = 65,                    -- right split width
-      -- start_insert = true,           -- enter insert/terminal mode on open
-      -- create_mappings = true,        -- set default keymaps
-      -- toggle_mapping = "<leader>tc", -- default toggle keybinding
-      -- no auto-install; please install your CLI yourself
+      command = "cursor-agent",         -- REQUIRED: set your CLI command
+      -- width = 65,                     -- right split width
+      -- start_insert = true,            -- enter insert/terminal mode on open
+      -- create_mappings = true,         -- set default keymaps
+      -- toggle_mapping = "<leader>tc",  -- default toggle keybinding
     })
   end,
 }
 ```
 
-#### packer.nvim
+#### packer.nvim (command is required)
 
 ```lua
 use({
   "your-username/truffle.nvim",
   config = function()
-    require("truffle").setup({})
+    require("truffle").setup({ command = "cursor-agent" })
   end,
 })
 ```
 
-#### dein.vim
+#### dein.vim (command is required)
 
 ```vim
 call dein#add('your-username/truffle.nvim')
 " Then in your init.lua or after/plugin file
 lua << EOF
-require('truffle').setup({})
+require('truffle').setup({ command = 'cursor-agent' })
 EOF
 ```
 
-#### vim-plug
+#### vim-plug (command is required)
 
 ```vim
 Plug 'your-username/truffle.nvim'
 " Then in your init.lua or after/plugin file
 lua << EOF
-require('truffle').setup({})
+require('truffle').setup({ command = 'cursor-agent' })
 EOF
 ```
 
@@ -75,14 +73,14 @@ The panel reuses the same terminal buffer across toggles. When opened, the windo
 
 ### Configuration
 
-Call `require('truffle').setup({...})` with options:
+Call `require('truffle').setup({...})` with options (command is required):
 
 ```lua
 require('truffle').setup({
-  command = "truffle",         -- choose any CLI command
-  width = 65,                   -- right split width in columns
-  start_insert = true,          -- start in terminal insert mode
-  create_mappings = true,       -- install default keymaps
+  command = "cursor-agent",      -- REQUIRED: choose any CLI command
+  width = 65,                     -- right split width in columns
+  start_insert = true,            -- start in terminal insert mode
+  create_mappings = true,         -- install default keymaps
   toggle_mapping = "<leader>tc", -- default toggle
 })
 ```
@@ -91,6 +89,7 @@ You can disable the default mapping and add your own:
 
 ```lua
 require('truffle').setup({
+  command = "cursor-agent",
   create_mappings = false,
 })
 
@@ -114,14 +113,12 @@ end, { desc = 'Truffle: Toggle panel' })
 
 ### Using different CLIs
 
-You can point the plugin to any CLI:
+You can point the plugin to any CLI (set `command` accordingly):
 
 ```lua
 require('truffle').setup({
-  -- Default
-  command = "truffle",
-  -- Cursor Agent
-  -- command = "cursor-agent",
+  -- Cursor Agent (example)
+  command = "cursor-agent",
   -- Crush
   -- command = "crush",
   -- Gemini (via npx)

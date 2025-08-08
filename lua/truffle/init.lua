@@ -8,7 +8,6 @@ local state = {
 }
 
 local DEFAULT_CONFIG = {
-  command = "truffle",
   width = 65,
   start_insert = true,
   create_mappings = true,
@@ -113,14 +112,24 @@ function M.open()
     return
   end
 
+  -- Require a command to be configured
+  if not state.config or not state.config.command or state.config.command == "" then
+    vim.notify(
+      "truffle.nvim: 'command' option is required. Set it via require('truffle').setup({ command = '<your-cli>' }).",
+      vim.log.levels.ERROR
+    )
+    return
+  end
+
   -- Ensure command is present; if missing, notify with helpful link
   if not ensure_command_available(state.config.command) then
     local url = guess_docs_url_for_command(state.config.command)
-    local msg = "Command not found: " .. state.config.command .. ". Please install it and retry."
+    local msg = "Command not found: '" .. state.config.command .. "'. Install it or change the configured command."
     if url then
       msg = msg .. " See: " .. url
     end
     vim.notify("truffle.nvim: " .. msg, vim.log.levels.ERROR)
+    return
   end
 
   local win = create_split_and_focus_right()
@@ -183,7 +192,19 @@ local function create_default_keymaps()
 end
 
 function M.setup(opts)
-  state.config = vim.tbl_deep_extend("force", vim.deepcopy(DEFAULT_CONFIG), opts or {})
+  opts = opts or {}
+
+  -- Enforce mandatory command option
+  if not opts.command or opts.command == "" then
+    state.config = vim.deepcopy(DEFAULT_CONFIG)
+    vim.notify(
+      "truffle.nvim: setup requires a 'command' option. Example: require('truffle').setup({ command = 'cursor-agent' })",
+      vim.log.levels.ERROR
+    )
+    return
+  end
+
+  state.config = vim.tbl_deep_extend("force", vim.deepcopy(DEFAULT_CONFIG), opts)
   create_user_commands()
   create_default_keymaps()
 end
