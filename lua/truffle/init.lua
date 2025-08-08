@@ -6,14 +6,19 @@ local state = {
   jobid = nil,
   config = nil,
   _commands_created = false,
-  _mapping_set = nil,
+  _mappings_set = {},
 }
 
 local DEFAULT_CONFIG = {
   width = 65,
   start_insert = true,
   create_mappings = true,
-  toggle_mapping = "<leader>tc",
+  mappings = {
+    toggle = "<leader>tc",
+    send_selection = "<leader>ts",
+    send_file = "<leader>tf",
+    send_input = "<leader>ti",
+  },
 }
 
 -- Validate user-provided options; returns boolean
@@ -26,6 +31,26 @@ local function validate_opts(opts)
     start_insert = { opts.start_insert, "boolean", true },
     create_mappings = { opts.create_mappings, "boolean", true },
     toggle_mapping = { opts.toggle_mapping, "string", true },
+    mappings = {
+      opts.mappings,
+      function(m)
+        if m == nil then return true end
+        if type(m) ~= "table" then return false end
+        local ok_types = true
+        for k, v in pairs(m) do
+          if k ~= "toggle" and k ~= "send_selection" and k ~= "send_file" and k ~= "send_input" then
+            ok_types = false
+            break
+          end
+          if v ~= nil and type(v) ~= "string" then
+            ok_types = false
+            break
+          end
+        end
+        return ok_types
+      end,
+      "table with optional string fields: toggle, send_selection, send_file, send_input",
+    },
     size = {
       opts.size,
       function(v)
@@ -358,28 +383,43 @@ local function create_user_commands()
 end
 
 local function create_default_keymaps()
-  local previous_mapping = state._mapping_set
-
-  if not state.config.create_mappings then
-    if previous_mapping then
-      pcall(vim.keymap.del, "n", previous_mapping)
+  local function set_map(mode, lhs, rhs, desc)
+    if not lhs or lhs == "" then return end
+    local key = mode .. "\0" .. lhs
+    local prev = state._mappings_set[key]
+    if prev and prev ~= lhs then
+      pcall(vim.keymap.del, mode, prev)
     end
-    state._mapping_set = nil
+    if not prev then
+      pcall(vim.keymap.set, mode, lhs, rhs, { desc = desc })
+      state._mappings_set[key] = lhs
+    end
+  end
+
+  -- Clear existing when disabled
+  if not state.config.create_mappings then
+    for key, lhs in pairs(state._mappings_set) do
+      local mode = key:sub(1, 1)
+      pcall(vim.keymap.del, mode, lhs)
+      state._mappings_set[key] = nil
+    end
     return
   end
 
-  local mapping = state.config.toggle_mapping or DEFAULT_CONFIG.toggle_mapping
-
-  if previous_mapping and previous_mapping ~= mapping then
-    pcall(vim.keymap.del, "n", previous_mapping)
+  -- Back-compat: allow old `toggle_mapping`
+  local mappings = vim.tbl_deep_extend("force", vim.deepcopy(DEFAULT_CONFIG.mappings), state.config.mappings or {})
+  if state.config.toggle_mapping and state.config.toggle_mapping ~= "" then
+    mappings.toggle = state.config.toggle_mapping
   end
 
-  if state._mapping_set ~= mapping then
-    pcall(vim.keymap.set, "n", mapping, function()
-      M.toggle()
-    end, { desc = "Truffle: Toggle panel" })
-    state._mapping_set = mapping
-  end
+  set_map("n", mappings.toggle, function() M.toggle() end, "Truffle: Toggle panel")
+  set_map("v", mappings.send_selection, function() M.send_visual() end, "Truffle: Send selection")
+  set_map("n", mappings.send_file, function() M.send_file({ path = "current" }) end, "Truffle: Send file")
+  set_map("n", mappings.send_input, function()
+    vim.ui.input({ prompt = "Truffle text: " }, function(input)
+      if input and input ~= "" then M.send_text(input) end
+    end)
+  end, "Truffle: Send input text")
 end
 
 function M.setup(opts)

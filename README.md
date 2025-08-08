@@ -4,7 +4,7 @@ A tiny, cheerful side-panel for Neovim that docks a terminal on the right and ru
 
 - **You choose the brain**: set a mandatory `command` (e.g., `cursor-agent`, `crush`, `claude`, `npx gemini`)
 - **Right-side dock**: neat vertical split on the right
-- **One key to rule them all**: default toggle is `<leader>tc`
+- **Keymaps**: defaults under `<leader>t...` (toggle, send selection/file/input)
 - **Layout**: vertical split docked to the right
 - **Command**: runs `truffle` in a terminal buffer (configurable)
 
@@ -26,8 +26,14 @@ A tiny, cheerful side-panel for Neovim that docks a terminal on the right and ru
       -- optional overrides
       -- width = 65,                     -- right split width
       -- start_insert = true,            -- enter insert/terminal mode on open
-      -- create_mappings = true,         -- set default keymaps, set it to false if you want to use user commands instead
-      -- toggle_mapping = "<leader>tc",  -- default toggle keybinding
+      -- create_mappings = true,         -- install default keymaps
+      -- mappings = {                    -- override any of the defaults below
+      --   toggle = "<leader>tc",
+      --   send_selection = "<leader>ts",
+      --   send_file = "<leader>tf",
+      --   send_input = "<leader>ti",
+      -- },
+      -- toggle_mapping = "<leader>tc",  -- deprecated: still supported for toggle (back-compat)
     })
   end,
 }
@@ -84,7 +90,13 @@ require('truffle').setup({
   width = 65,                     -- right split width in columns
   start_insert = true,            -- start in terminal insert mode
   create_mappings = true,         -- install default keymaps
-  toggle_mapping = "<leader>tc", -- default toggle
+  mappings = {
+    toggle = "<leader>tc",
+    send_selection = "<leader>ts",
+    send_file = "<leader>tf",
+    send_input = "<leader>ti",
+  },
+  -- toggle_mapping = "<leader>tc", -- deprecated; still works for toggle only
 })
 ```
 
@@ -96,9 +108,18 @@ require('truffle').setup({
   create_mappings = false,
 })
 
-vim.keymap.set('n', '<leader>tc', function()
-  require('truffle').toggle()
-end, { desc = 'Truffle: Toggle panel' })
+-- Toggle
+vim.keymap.set('n', '<leader>tc', function() require('truffle').toggle() end, { desc = 'Truffle: Toggle panel' })
+-- Send selection (visual mode)
+vim.keymap.set('v', '<leader>ts', function() require('truffle').send_visual() end, { desc = 'Truffle: Send selection' })
+-- Send current file
+vim.keymap.set('n', '<leader>tf', function() require('truffle').send_file({ path = 'current' }) end, { desc = 'Truffle: Send file' })
+-- Prompt for input text and send
+vim.keymap.set('n', '<leader>ti', function()
+  vim.ui.input({ prompt = 'Truffle text: ' }, function(input)
+    if input and input ~= '' then require('truffle').send_text(input) end
+  end)
+end, { desc = 'Truffle: Send input text' })
 ```
 
 ### Commands 🧪
@@ -107,6 +128,13 @@ end, { desc = 'Truffle: Toggle panel' })
 - `:TruffleOpen` – Open/create and focus the right-side terminal
 - `:TruffleClose` – Close the right-side terminal window
 - `:TruffleFocus` – Focus the terminal window (opens if missing)
+  
+### Default keymaps ⌨️
+
+- Normal: `<leader>tc` – Toggle panel
+- Visual: `<leader>ts` – Send selection
+- Normal: `<leader>tf` – Send current file
+- Normal: `<leader>ti` – Prompt for text and send
   
 
 ### Notes 📝
