@@ -246,6 +246,17 @@ function M.focus()
   end
 end
 
+-- Ensure the panel is visible and focused in insert (terminal) mode
+local function ensure_panel_visible_and_focus_insert()
+  if not is_valid_win(state.winid) then
+    M.open()
+  end
+  if is_valid_win(state.winid) then
+    pcall(vim.api.nvim_set_current_win, state.winid)
+    vim.cmd("startinsert")
+  end
+end
+
 -- Internal: ensure the terminal job is available for sending
 local function ensure_job_ready()
   if not state.jobid or state.jobid <= 0 then
@@ -255,16 +266,31 @@ local function ensure_job_ready()
   return true
 end
 
--- Internal: send string to terminal with a trailing newline if missing
-local function send_to_terminal(text)
+-- Internal: send data to terminal; accepts string or table of lines.
+local function send_to_terminal(data)
+  ensure_panel_visible_and_focus_insert()
   if not ensure_job_ready() then return end
-  if type(text) ~= "string" then
-    vim.notify("truffle.nvim: send_text expects a string.", vim.log.levels.ERROR)
+  local kind = type(data)
+  if kind == "string" then
+    local needs_newline = not (data:sub(-1) == "\n" or data:sub(-1) == "\r")
+    local payload = needs_newline and (data .. "\r") or data
+    pcall(vim.fn.chansend, state.jobid, payload)
+    return
+  elseif kind == "table" then
+    local payload = {}
+    for _, line in ipairs(data) do
+      local text = type(line) == "string" and line or tostring(line)
+      if not (text:sub(-1) == "\n" or text:sub(-1) == "\r") then
+        text = text .. "\r"
+      end
+      table.insert(payload, text)
+    end
+    if #payload > 0 then
+      pcall(vim.fn.chansend, state.jobid, payload)
+    end
     return
   end
-  local needs_newline = not (text:sub(-1) == "\n" or text:sub(-1) == "\r")
-  local payload = needs_newline and (text .. "\r") or text
-  pcall(vim.fn.chansend, state.jobid, payload)
+  vim.notify("truffle.nvim: send_to_terminal expects a string or a list of strings.", vim.log.levels.ERROR)
 end
 
 -- Public: send plain text to the running job
@@ -315,6 +341,7 @@ end
 
 -- Public: send the current visual selection to the running job
 function M.send_visual()
+  ensure_panel_visible_and_focus_insert()
   local text = get_visual_selection_text()
   if not text or text == "" then
     vim.notify("truffle.nvim: visual selection is empty.", vim.log.levels.WARN)
@@ -353,11 +380,12 @@ function M.send_file(opts)
     vim.notify("truffle.nvim: failed to read file: " .. path, vim.log.levels.ERROR)
     return
   end
-  local text = table.concat(lines, "\n")
-  if text == "" then
+  if #lines == 0 then
     vim.notify("truffle.nvim: file is empty: " .. path, vim.log.levels.WARN)
+    return
   end
-  send_to_terminal(text)
+  -- Use unified sender to avoid bracketed paste summaries and ensure focus/insert
+  send_to_terminal(lines)
 end
 
 local function create_user_commands()
@@ -383,25 +411,25 @@ local function create_user_commands()
 end
 
 local function create_default_keymaps()
-  local function set_map(mode, lhs, rhs, desc)
+  local function apply_mapping(action, mode, lhs, rhs, desc)
     if not lhs or lhs == "" then return end
-    local key = mode .. "\0" .. lhs
-    local prev = state._mappings_set[key]
-    if prev and prev ~= lhs then
-      pcall(vim.keymap.del, mode, prev)
+    local prev = state._mappings_set[action]
+    if prev and (prev.lhs ~= lhs or prev.mode ~= mode) then
+      pcall(vim.keymap.del, prev.mode, prev.lhs)
     end
-    if not prev then
+    if not prev or prev.lhs ~= lhs or prev.mode ~= mode then
       pcall(vim.keymap.set, mode, lhs, rhs, { desc = desc })
-      state._mappings_set[key] = lhs
+      state._mappings_set[action] = { mode = mode, lhs = lhs }
     end
   end
 
   -- Clear existing when disabled
   if not state.config.create_mappings then
-    for key, lhs in pairs(state._mappings_set) do
-      local mode = key:sub(1, 1)
-      pcall(vim.keymap.del, mode, lhs)
-      state._mappings_set[key] = nil
+    for action, rec in pairs(state._mappings_set) do
+      if rec and rec.mode and rec.lhs then
+        pcall(vim.keymap.del, rec.mode, rec.lhs)
+      end
+      state._mappings_set[action] = nil
     end
     return
   end
@@ -412,10 +440,10 @@ local function create_default_keymaps()
     mappings.toggle = state.config.toggle_mapping
   end
 
-  set_map("n", mappings.toggle, function() M.toggle() end, "Truffle: Toggle panel")
-  set_map("v", mappings.send_selection, function() M.send_visual() end, "Truffle: Send selection")
-  set_map("n", mappings.send_file, function() M.send_file({ path = "current" }) end, "Truffle: Send file")
-  set_map("n", mappings.send_input, function()
+  apply_mapping("toggle", "n", mappings.toggle, function() M.toggle() end, "Truffle: Toggle panel")
+  apply_mapping("send_selection", "v", mappings.send_selection, function() M.send_visual() end, "Truffle: Send selection")
+  apply_mapping("send_file", "n", mappings.send_file, function() M.send_file({ path = "current" }) end, "Truffle: Send file")
+  apply_mapping("send_input", "n", mappings.send_input, function()
     vim.ui.input({ prompt = "Truffle text: " }, function(input)
       if input and input ~= "" then M.send_text(input) end
     end)
