@@ -284,22 +284,7 @@ local function send_to_terminal(data)
 	if not ensure_job_ready() then
 		return
 	end
-
-	local kind = type(data)
-	if kind == "string" then
-		if data == "" then
-			return
-		end
-		pcall(vim.fn.chansend, state.jobid, data)
-		return
-	elseif kind == "table" then
-		if #data == 0 then
-			return
-		end
-		vim.fn.chansend(state.jobid, data)
-		return
-	end
-	vim.notify("truffle.nvim: send_to_terminal expects a string or a list of strings.", vim.log.levels.ERROR)
+	pcall(vim.fn.chansend, state.jobid, data)
 end
 
 -- Public: send plain text to the running job
@@ -368,7 +353,8 @@ function M.send_file(opts)
 	opts = opts or {}
 	local bufnr = vim.api.nvim_get_current_buf()
 	local buffer_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-	send_to_terminal(table.concat(buffer_lines, "\n"))
+	table.insert(buffer_lines, "")
+	send_to_terminal(buffer_lines)
 end
 
 local function create_user_commands()
