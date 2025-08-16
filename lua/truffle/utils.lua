@@ -102,4 +102,50 @@ function Utils.apply_window_look(win, side)
 	end
 end
 
+function Utils.parse_env_file(filepath)
+	if not filepath or filepath == "" then
+		return {}
+	end
+
+	-- Ensure it's a .env file
+	if not filepath:match("%.env$") then
+		return {}, "Only .env files are supported"
+	end
+
+	-- Check if file exists
+	local file = io.open(filepath, "r")
+	if not file then
+		return {}, "File not found: " .. filepath
+	end
+
+	local env = {}
+	local line_num = 0
+
+	for line in file:lines() do
+		line_num = line_num + 1
+		-- Skip empty lines and comments
+		line = line:match("^%s*(.-)%s*$") -- trim whitespace
+		if line ~= "" and not line:match("^#") then
+			-- Parse KEY=VALUE format
+			local key, value = line:match("^([^=]+)=(.*)$")
+			if key and value then
+				key = key:match("^%s*(.-)%s*$") -- trim key
+				-- Handle quoted values
+				if value:match('^".*"$') then
+					value = value:sub(2, -2) -- remove quotes
+				elseif value:match("^'.*'$") then
+					value = value:sub(2, -2) -- remove quotes
+				end
+				env[key] = value
+			else
+				file:close()
+				return {}, "Invalid .env format at line " .. line_num .. ": " .. line
+			end
+		end
+	end
+
+	file:close()
+	return env
+end
+
 return Utils

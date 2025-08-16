@@ -42,13 +42,16 @@ function Keymaps.create_default_keymaps(state, api, default_mappings)
 		api.send_file({ path = "current" })
 	end, "Truffle: Send file")
 
-	apply_mapping(state, "send_input", "n", mappings.send_input, function()
-		vim.ui.input({ prompt = "Truffle text: " }, function(input)
-			if input and input ~= "" then
-				api.send_text(input)
-			end
-		end)
-	end, "Truffle: Send input text")
+	-- Profile cycling keymaps (only if profiles are configured)
+	if state.base_config and state.base_config.profiles then
+		apply_mapping(state, "next_profile", "n", mappings.next_profile, function()
+			api.next_profile()
+		end, "Truffle: Next profile")
+
+		apply_mapping(state, "prev_profile", "n", mappings.prev_profile, function()
+			api.prev_profile()
+		end, "Truffle: Previous profile")
+	end
 end
 
 return Keymaps
