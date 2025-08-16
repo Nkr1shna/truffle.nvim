@@ -1,179 +1,278 @@
-### truffle.nvim ✨
+# 🍄 truffle.nvim
 
-A tiny, cheerful side-panel for Neovim that docks a terminal on the right by default and runs the AI/CLI of your choice. Bring your own agent, we bring the vibes.
+> *Because the sweetest workflows come from tasting many truffles, not just sticking to one - experiment and discover what works for you!*
 
-- **You choose the brain**: set a mandatory `command` (e.g., `cursor-agent`, `crush`, `claude`, `npx gemini`)
-- **Right-side dock (default)**: neat vertical split on the right; configurable `side = 'right' | 'bottom' | 'left'`
-- **Keymaps**: defaults under `<leader>t...` (toggle, send selection/file/input)
+A Neovim plugin that adds a cozy sidebar terminal where you can chat with your favorite CLI-based AI tools like `cursor-agent`, `gemini`, `codex`, `opencode`, and friends. Think of it as your personal AI assistant panel that's always just a keystroke away! 
 
-### Demo 🎥
+## ✨ Features
+
+- 🎯 **Multi-Profile Support**: Switch between different AI tools seamlessly
+- 📍 **Flexible Layout**: Sidebar on left, right, or bottom - you choose!
+- 🚀 **Quick Actions**: Send files or selections with ease
+
+## Demo 🎥
 
 ![truffle_in_action](https://github.com/user-attachments/assets/e958e5dd-9269-4d28-9f47-6a96a4f442e8)
 
-### Requirements 🧰
+## 📦 Installation
 
-- Neovim 0.7+ (0.9+ recommended)
-- A CLI on your `PATH` to run in the panel (the plugin doesn’t install CLIs for you) — see [Get an agent CLI](#get-an-agent-cli)
-
-### Installation 🚀
-
-#### lazy.nvim (command is required)
+### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 {
   "Nkr1shna/truffle.nvim",
   config = function()
     require("truffle").setup({
-      command = "cursor-agent",         -- REQUIRED: set your CLI command, make sure it is available in path
+      profiles = {
+        cursor = {
+          command = "cursor-agent",
+          default = true,
+        },
+        codex = {
+          command = "codex",
+          env = "~/.env"
+        },
+        gemini = {
+          command = "gemini-cli",
+          cwd = "~/projects/current",
+          env = {
+            GOOGLE_API_KEY="YOUR_API_KEY"
+          }
+        },
+      }
     })
   end,
 }
 ```
 
-#### packer.nvim (command is required)
+### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
 
 ```lua
-use({
+use {
   "Nkr1shna/truffle.nvim",
   config = function()
-    require("truffle").setup({ command = "cursor-agent" })
-  end,
-})
+    require("truffle").setup({
+      profiles = {
+        cursor = { command = "cursor-agent", default = true },
+        claude = { command = "claude-cli" },
+      }
+    })
+  end
+}
 ```
 
-#### dein.vim (command is required)
-
-```vim
-call dein#add('Nkr1shna/truffle.nvim')
-" Then in your init.lua or after/plugin file
-lua << EOF
-require('truffle').setup({ command = 'cursor-agent' })
-EOF
-```
-
-#### vim-plug (command is required)
+### Using [vim-plug](https://github.com/junegunn/vim-plug)
 
 ```vim
 Plug 'Nkr1shna/truffle.nvim'
-" Then in your init.lua or after/plugin file
+
+" Add to your init.lua or in a lua block:
 lua << EOF
-require('truffle').setup({ command = 'cursor-agent' })
+require("truffle").setup({
+  profiles = {
+    cursor = { command = "cursor-agent", default = true },
+    claude = { command = "claude-cli" },
+  }
+})
 EOF
 ```
 
-### Usage 🎛️
+### Using [dein.vim](https://github.com/Shougo/dein.vim)
 
-- **Toggle panel**: press `<leader>tc` (default) or run:
-  - `:TruffleToggle`
-- **Open**: `:TruffleOpen`
-- **Close**: `:TruffleClose`
-- **Focus**: `:TruffleFocus`
+```vim
+call dein#add('Nkr1shna/truffle.nvim')
 
-The panel reuses the same terminal buffer across toggles. When opened, it docks to the configured `side` (default: right). If `side = 'bottom'`, `size` controls height and the panel uses the full editor width; otherwise `size` controls width.
+" Configuration in init.lua or lua block
+lua require("truffle").setup({ profiles = { cursor = { command = "cursor-agent", default = true } } })
+```
 
-### Configuration ⚙️
+## ⚙️ Configuration
 
-Call `require('truffle').setup({...})` with options (command is required). The default dock is right.
+### Complete Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `side` | `string` | `"right"` | Panel position: `"right"`, `"left"`, or `"bottom"` |
+| `size` | `number/string` | `nil` | Panel size (cols/rows) or percentage like `"33%"` |
+| `start_insert` | `boolean` | `false` | Start in insert mode when opening |
+| `create_mappings` | `boolean` | `true` | Create default key mappings |
+| `mappings` | `table` | See below | Custom key mapping overrides |
+| `profiles` | `table` | **Required** | Profile configurations (see below) |
+
+
+### Default Key Mappings
+
+| Mapping | Default Key | Mode | Description |
+|---------|-------------|------|-------------|
+| `toggle` | `<leader>tc` | Normal | Toggle the truffle panel |
+| `send_selection` | `<leader>ts` | Visual | Send selected text |
+| `send_file` | `<leader>tf` | Normal | Send current file |
+| `next_profile` | `]c` | Normal | Switch to next profile |
+| `prev_profile` | `[c` | Normal | Switch to previous profile |
+
+### Profile Configuration
+
+Each profile is a table with the following options:
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `command` | `string` | ✅ | CLI command to execute |
+| `cwd` | `string` | ❌ | Working directory for the command |
+| `env` | `table/string` | ❌ | Environment variables (table) or path to .env file |
+| `default` | `boolean` | ❌ | Mark as default profile when multiple profiles are configured (only one allowed) |
+
+## 🚀 Usage Examples
+
+### Basic Setup
 
 ```lua
-require('truffle').setup({
-  command = "cursor-agent",      -- REQUIRED: choose any CLI command
+require("truffle").setup({
+  side = "right",
+  size = "30%",
+  profiles = {
+    cursor = {
+      command = "cursor-agent",
+      default = true,
+    },
+    claude = {
+      command = "claude-cli --interactive",
+      cwd = "~/code/current-project",
+    },
+    gemini = {
+      command = "gemini-chat",
+      env = { API_KEY = "your-key-here" },
+    },
+  }
+})
+```
 
-  -- Layout & size
-  side = 'right',                 -- 'right' | 'bottom' | 'left' (default: 'right')
-  size = nil,                     -- number (cols/rows) or percentage string like '33%'
+### Advanced Setup with Environment Files
 
-  -- Window/buffer look
-  buffer_name = '[Truffle]',      -- friendly buffer name (visible in statusline/tabline)
-  buflisted = false,              -- whether buffer is listed in :ls (false => only in :ls!)
-
-  -- Behavior & keymaps
-  start_insert = true,            -- start in terminal insert mode
-  create_mappings = true,         -- install default keymaps
+```lua
+require("truffle").setup({
+  side = "bottom",
+  size = 15,
+  start_insert = true,  -- Override default to start in insert mode
   mappings = {
-    toggle = "<leader>tc",
-    send_selection = "<leader>ts",
-    send_file = "<leader>tf",
-    send_input = "<leader>ti",
+    toggle = "<leader>ai",
+    send_selection = "<leader>as",
+    send_file = "<leader>af",
   },
-  -- toggle_mapping = "<leader>tc", -- deprecated; still works for toggle only
+  profiles = {
+    work_claude = {
+      command = "claude",
+      cwd = "~/work/projects",
+      env = "~/.config/truffle/work.env",  -- Load from file
+      default = true,
+    },
+    personal_gpt = {
+      command = "codex",
+      cwd = "~/personal",
+      env = {
+        OPENAI_API_KEY = "sk-...",
+        MODEL = "gpt-4",
+      },
+    },
+  }
 })
 ```
 
-Prefer your own keymaps? Disable the default and add your favorite:
+### Minimal Setup
 
 ```lua
-require('truffle').setup({
-  command = "cursor-agent",
-  create_mappings = false,
+require("truffle").setup({
+  profiles = {
+    ai = { command = "cursor-agent", default = true }
+  }
 })
-
--- Toggle
-vim.keymap.set('n', '<leader>tc', function() require('truffle').toggle() end, { desc = 'Truffle: Toggle panel' })
--- Send selection (visual mode)
-vim.keymap.set('v', '<leader>ts', function() require('truffle').send_visual() end, { desc = 'Truffle: Send selection' })
--- Send current file
-vim.keymap.set('n', '<leader>tf', function() require('truffle').send_file({ path = 'current' }) end, { desc = 'Truffle: Send file' })
--- Prompt for input text and send
-vim.keymap.set('n', '<leader>ti', function()
-  vim.ui.input({ prompt = 'Truffle text: ' }, function(input)
-    if input and input ~= '' then require('truffle').send_text(input) end
-  end)
-end, { desc = 'Truffle: Send input text' })
 ```
 
-### Configuration reference 📘
+## 🎮 Commands
 
-The table below lists each option with its type, whether it is required, and its default value.
+| Command | Description |
+|---------|-------------|
+| `:TruffleToggle` | Toggle the truffle panel |
+| `:TruffleOpen` | Open the truffle panel |
+| `:TruffleClose` | Close the truffle panel |
+| `:TruffleFocus` | Focus the truffle panel |
+| `:TruffleSwitchProfile [name] [cwd=path]` | Switch to a different profile by providing another cwd|
 
-| Option | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `command` | string | Yes | — | CLI to run inside the panel. Must be in your `PATH`. |
-| `side` | "right" \| "bottom" \| "left" | No | `"right"` | Where to dock the panel. |
-| `size` | number or percentage string `"NN%"` | No | `nil` | Absolute size for the split. If percentage, computed from `vim.o.columns` (side) or `vim.o.lines` (bottom). When `side = 'bottom'`, this is the height (bottom dock is always full width); otherwise, width. |
-| `buffer_name` | string | No | `"[Truffle]"` | Friendly name visible in statusline/tabline. |
-| `buflisted` | boolean | No | `false` | If `true`, buffer shows in `:ls`; otherwise only in `:ls!`. |
-| `start_insert` | boolean | No | `true` | Enter terminal insert mode on open. |
-| `create_mappings` | boolean | No | `true` | Install default keymaps. |
-| `mappings` | table of strings | No | see below | Override any default mapping: `toggle`, `send_selection`, `send_file`, `send_input`. |
-| `toggle_mapping` | string (deprecated) | No | `nil` | Back-compat single mapping for toggle only. Prefer `mappings.toggle`. |
 
-Default mappings:
-- `toggle`: `"<leader>tc"`
-- `send_selection`: `"<leader>ts"`
-- `send_file`: `"<leader>tf"`
-- `send_input`: `"<leader>ti"`
+### Profile Switching Examples
 
-Sizing behavior when `size` is not set:
-- **Bottom dock**: full editor width; uses a default height of `12` rows.
-- **Left/Right dock**: uses a default width of `65` columns.
+```vim
+" List all available profiles
+:TruffleSwitchProfile
 
-### Commands 🧪
+" Switch to claude profile
+:TruffleSwitchProfile claude
 
-- `:TruffleToggle` – Toggle the terminal panel
-- `:TruffleOpen` – Open/create and focus the terminal panel
-- `:TruffleClose` – Close the terminal panel window
-- `:TruffleFocus` – Focus the terminal panel (opens if missing)
-  
-### Default keymaps ⌨️
+" Switch to cursor profile with custom working directory
+:TruffleSwitchProfile cursor cwd=~/special-project
+```
 
-- Normal: `<leader>tc` – Toggle panel
-- Visual: `<leader>ts` – Send selection
-- Normal: `<leader>tf` – Send current file
-- Normal: `<leader>ti` – Prompt for text and send
-  
+## 🛠️ API Functions
 
-### Notes 📝
+```lua
+local truffle = require("truffle")
 
-- If the configured `command` is not found on `PATH`, the plugin will show an error.
-- The same buffer is reused across toggles to retain session context.
+-- Panel control
+truffle.toggle()
+truffle.open()
+truffle.close()
+truffle.focus()
 
-#### Get an agent CLI
-- Cursor Agent: https://docs.cursor.com/en/cli/installation
-- Crush: https://github.com/charmbracelet/crush
-- Gemini CLI: https://github.com/google-gemini/gemini-cli
-- Claude Code/CLI: https://docs.anthropic.com/en/docs/claude-code/setup
+-- Send content
+truffle.send_visual()  -- Send current visual selection
+truffle.send_file({ path = "current" })
 
-### License
+-- Profile management
+truffle.switch_profile("claude", { cwd = "/path/to/project" })
+truffle.next_profile()
+truffle.prev_profile()
 
-MIT
+-- State inspection
+local current = truffle.get_current_profile()
+local jobs = truffle.get_background_jobs()
+```
+
+## 🎭 Tips & Tricks
+
+1. **Quick Profile Switching**: Use `]c` and `[c` to cycle through your AI tools without leaving your keyboard home row!
+
+2. **Environment Files**: Store your API keys in separate `.env` files for each profile:
+   ```bash
+   # ~/.config/truffle/claude.env
+   ANTHROPIC_API_KEY=your_key_here
+   MODEL=claude-3-sonnet
+   ```
+
+3. **Project-Specific AI**: Set different working directories per profile to keep context relevant:
+   ```lua
+   profiles = {
+     work = { command = "claude-cli", cwd = "~/work" },
+     personal = { command = "gpt-cli", cwd = "~/personal" },
+   }
+   ```
+
+4. **Send Files Easily**: Use `<leader>tf` to send the current file to your AI for review or questions.
+
+5. **Custom Mappings**: Don't like the defaults? Change them:
+   ```lua
+   mappings = {
+     toggle = "<C-a>",  -- Ctrl+a to toggle
+     send_selection = "gs",  -- gs in visual mode
+   }
+   ```
+
+## 🤝 Contributing
+
+Found a bug? Have a feature idea? Want to add support for a new AI tool? Contributions are welcome! 
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+*Happy coding with your AI companions! 🍄✨*
