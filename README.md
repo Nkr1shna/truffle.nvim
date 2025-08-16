@@ -14,6 +14,8 @@ A Neovim plugin that adds a cozy sidebar terminal where you can chat with your f
 
 ![truffle_in_action](https://github.com/user-attachments/assets/e958e5dd-9269-4d28-9f47-6a96a4f442e8)
 
+![swtch](https://github.com/user-attachments/assets/091a0c80-ba0b-47f6-b3a3-0d91ecef8572)
+
 ## 📦 Installation
 
 ### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
